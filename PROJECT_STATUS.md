@@ -30,3 +30,11 @@ Toutes les sections du cahier des charges ont une première implémentation.
 - Corrigé `BrowserManager.reload()` pour supprimer l'incompatibilité de types dans l'opérateur ternaire signalée par GitHub Actions.
 - Cette correction est fondée sur le diagnostic de build fourni par l'utilisateur.
 - Compilation non exécutée localement : elle doit être confirmée par une nouvelle exécution GitHub Actions.
+
+
+## 0.2.0 — état de la refonte
+- Accueil SwiftUI refait avec cartes des sept plateformes, raccourcis vers Bibliothèque/Navigateur/Téléchargements, statistiques et contenus récents.
+- Sélecteur de thème persistant : automatique, clair, sombre.
+- Les services sont pour l'instant des points d'entrée vers leurs sites officiels dans WKWebView. Ce n'est pas une intégration API/SDK complète et l'authentification dépend des sites.
+- Téléchargement : les liens directs autorisés continuent d'être gérés par MediaBox. Les téléchargements protégés/abonnements des plateformes ne sont pas extraits.
+- Pas de build Xcode ni test simulateur effectué dans cet environnement. Vérifier le build sur GitHub Actions puis le comportement de chaque site sur iPhone XR.

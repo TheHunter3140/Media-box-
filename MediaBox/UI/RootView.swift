@@ -4,6 +4,7 @@ struct RootView: View {
     @EnvironmentObject var coordinator: AppCoordinator
     @EnvironmentObject var playback: PlaybackController
     @EnvironmentObject var eco: EcoCore
+    @EnvironmentObject var settings: AppSettings
 
     var body: some View {
         TabView(selection: $coordinator.selectedTab) {
@@ -19,6 +20,7 @@ struct RootView: View {
         .alert("Lecture", isPresented: Binding(get: { playback.errorMessage != nil }, set: { if !$0 { playback.errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(playback.errorMessage ?? "") }
+        .preferredColorScheme(settings.preferredColorScheme)
         .transaction { if !eco.policy.animations { $0.animation = nil } }
     }
 }

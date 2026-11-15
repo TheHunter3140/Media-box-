@@ -22,8 +22,8 @@ struct BrowserView: View {
             }.padding(.horizontal, 12).padding(.vertical, 8)
             if browser.isLoading { ProgressView(value: browser.progress).padding(.horizontal, 12) }
             if browser.isYouTubePage {
-                Label("YouTube : lecture via le site officiel uniquement. Le téléchargement n'est pas pris en charge.", systemImage: "info.circle")
-                    .font(.caption).padding(8).frame(maxWidth: .infinity, alignment: .leading).background(Color.yellow.opacity(0.18))
+                Label("YouTube : lecture via le service officiel. Les téléchargements protégés ne sont pas disponibles dans MediaBox.", systemImage: "info.circle")
+                    .font(.caption).padding(8).frame(maxWidth: .infinity, alignment: .leading).background(Color.yellow.opacity(0.16))
             }
             if let wv = browser.webView {
                 WebViewContainer(webView: wv)

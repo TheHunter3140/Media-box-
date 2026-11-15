@@ -5,7 +5,8 @@ import MediaPlayer
 
 enum Theme {
     static let accent = Color(red: 0.18, green: 0.45, blue: 0.98)
-    static let corner: CGFloat = 16
+    static let corner: CGFloat = 20
+    static let heroGradient = LinearGradient(colors: [Color(red: 0.08, green: 0.16, blue: 0.36), Color(red: 0.22, green: 0.20, blue: 0.52), Color(red: 0.36, green: 0.12, blue: 0.40)], startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
 /// Fond adaptatif : matériau translucide seulement si l'utilisateur ET EcoCore l'autorisent.
@@ -15,7 +16,7 @@ struct Surface: ViewModifier {
     var radius: CGFloat = Theme.corner
     func body(content: Content) -> some View {
         if settings.transparency && eco.policy.transparency {
-            content.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            content.background(.regularMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
         } else {
             content.background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: radius, style: .continuous))
         }

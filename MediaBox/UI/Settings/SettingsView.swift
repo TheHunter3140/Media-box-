@@ -19,10 +19,27 @@ struct SettingsView: View {
                     Text("EcoCore réduit le travail de MediaBox ; c'est iOS qui gère le matériel (mode économie d'énergie, température).")
                         .font(.footnote).foregroundColor(.secondary)
                 }
-                Section("Affichage") {
-                    Toggle("Effets de transparence", isOn: $settings.transparency)
-                    Toggle("Animations", isOn: $settings.animations)
+                Section("Apparence") {
+                    Picker("Thème", selection: $settings.appearanceMode) {
+                        Text("Automatique · iOS").tag("system")
+                        Text("Clair élégant").tag("light")
+                        Text("Sombre lumineux").tag("dark")
+                    }
+                    Toggle("Liquid Glass / transparence", isOn: $settings.transparency)
+                    Toggle("Animations fluides", isOn: $settings.animations)
                     Toggle("Retour haptique", isOn: $settings.haptics)
+                    Text("Le thème automatique suit l'apparence de l'iPhone. Les matériaux translucides sont réduits par EcoCore lorsque les ressources sont limitées.").font(.footnote).foregroundColor(.secondary)
+                }
+                Section("Services") {
+                    ForEach(MediaService.all) { service in
+                        HStack(spacing: 10) {
+                            Image(systemName: service.symbol).frame(width: 24).foregroundColor(Theme.accent)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(service.name)
+                                Text(service.downloadNote).font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                            }
+                        }.padding(.vertical, 3)
+                    }
                 }
                 Section("Lecture") {
                     Stepper("Fondu entre morceaux : \(Int(settings.fadeSeconds)) s", value: $settings.fadeSeconds, in: 0...10)
@@ -43,8 +60,8 @@ struct SettingsView: View {
                     NavigationLink { BenchmarkView() } label: { Label("Benchmark", systemImage: "speedometer") }
                 }
                 Section("À propos") {
-                    Text("MediaBox 0.1.0 (développement)")
-                    Text("Limites iOS : pas de lecture MKV/AVI/OGG/OPUS native ; sous-titres externes .srt non gérés ; téléchargements YouTube non pris en charge.").font(.footnote).foregroundColor(.secondary)
+                    Text("MediaBox 0.2.0 (refonte interface)")
+                    Text("Les plateformes sont ouvertes via leurs sites officiels. Les téléchargements de contenus protégés ne sont pas pris en charge ; seuls les fichiers et exports autorisés peuvent être importés.").font(.footnote).foregroundColor(.secondary)
                 }
             }.navigationTitle("Réglages")
         }

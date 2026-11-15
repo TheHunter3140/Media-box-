@@ -37,3 +37,7 @@ Stockage : JSON atomique dans Application Support (choix justifié : zéro dépe
 
 ## Correctif 0.1.2
 Cette version corrige l'erreur de compilation `Void?` / `WKNavigation?` dans `BrowserManager.reload()`. Relance GitHub Actions pour vérifier le build et découvrir d'éventuelles erreurs suivantes.
+
+
+## Version 0.2.0 — refonte de l'accueil
+L'accueil présente maintenant un hub vers YouTube, SoundCloud, Spotify, Vimeo, Dailymotion, TikTok et Twitch. Les liens ouvrent les sites officiels dans le navigateur MediaBox. Le thème peut suivre iOS ou être forcé en clair/sombre. Les intégrations SDK/OAuth spécifiques et les téléchargements de contenus protégés ne sont pas inclus : seuls les fichiers directs et exports autorisés sont importables.

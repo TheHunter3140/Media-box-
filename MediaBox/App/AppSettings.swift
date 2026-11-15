@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import SwiftUI
 
 @MainActor
 final class AppSettings: ObservableObject {
@@ -7,6 +8,11 @@ final class AppSettings: ObservableObject {
 
     @Published var haptics: Bool { didSet { d.set(haptics, forKey: "s.haptics") } }
     @Published var transparency: Bool { didSet { d.set(transparency, forKey: "s.transparency") } }
+    /// system = suit iOS, light = clair, dark = sombre.
+    @Published var appearanceMode: String { didSet { d.set(appearanceMode, forKey: "s.appearanceMode") } }
+    var preferredColorScheme: ColorScheme? {
+        switch appearanceMode { case "light": return .light; case "dark": return .dark; default: return nil }
+    }
     @Published var animations: Bool { didSet { d.set(animations, forKey: "s.animations") } }
     @Published var maxDownloads: Int { didSet { d.set(maxDownloads, forKey: "s.maxDownloads") } }
     @Published var fadeSeconds: Double { didSet { d.set(fadeSeconds, forKey: "s.fade") } }
@@ -17,7 +23,8 @@ final class AppSettings: ObservableObject {
     init() {
         let d = UserDefaults.standard
         haptics = d.object(forKey: "s.haptics") as? Bool ?? true
-        transparency = d.object(forKey: "s.transparency") as? Bool ?? false
+        transparency = d.object(forKey: "s.transparency") as? Bool ?? true
+        appearanceMode = d.string(forKey: "s.appearanceMode") ?? "system"
         animations = d.object(forKey: "s.animations") as? Bool ?? true
         maxDownloads = d.object(forKey: "s.maxDownloads") as? Int ?? 2
         fadeSeconds = d.object(forKey: "s.fade") as? Double ?? 0
