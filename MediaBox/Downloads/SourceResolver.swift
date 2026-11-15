@@ -64,7 +64,7 @@ protocol DownloadSourceAdapter {
 }
 
 enum SourceAdapters {
-    static let all: [DownloadSourceAdapter] = [YouTubePolicyAdapter(), DirectLinkAdapter()]
+    static let all: [DownloadSourceAdapter] = [PlatformPolicyAdapter(), DirectLinkAdapter()]
     static func resolve(_ url: URL) -> AdapterResult {
         for a in all where a.canHandle(url) { return a.resolve(url) }
         return .refused("Ce lien n'est pas un fichier audio ou vidéo téléchargeable directement.")

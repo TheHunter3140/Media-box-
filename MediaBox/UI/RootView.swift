@@ -1,27 +1,79 @@
 import SwiftUI
 
+struct ThemedRoot: View {
+    @EnvironmentObject var settings: AppSettings
+    var body: some View { RootView().preferredColorScheme(settings.appearance.scheme) }
+}
+
 struct RootView: View {
     @EnvironmentObject var coordinator: AppCoordinator
     @EnvironmentObject var playback: PlaybackController
     @EnvironmentObject var eco: EcoCore
-    @EnvironmentObject var settings: AppSettings
 
     var body: some View {
-        TabView(selection: $coordinator.selectedTab) {
-            HomeView().tabItem { Label("Accueil", systemImage: "house") }.tag(AppTab.home)
-            LibraryView().tabItem { Label("Bibliothèque", systemImage: "music.note.list") }.tag(AppTab.library)
-            BrowserView().tabItem { Label("Navigateur", systemImage: "safari") }.tag(AppTab.browser)
-            DownloadsView().tabItem { Label("Téléchargements", systemImage: "arrow.down.circle") }.tag(AppTab.downloads)
-            SettingsView().tabItem { Label("Réglages", systemImage: "gearshape") }.tag(AppTab.settings)
+        ZStack {
+            GlassBackground()
+            Group {
+                switch coordinator.selectedTab {
+                case .home: HomeView()
+                case .library: LibraryView()
+                case .browser: ExplorerView()
+                case .downloads: DownloadsView()
+                case .settings: SettingsView()
+                }
+            }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { MiniPlayerView() }
+        .safeAreaInset(edge: .bottom, spacing: 0) { Dock() }
         .sheet(isPresented: $playback.playerPresented) { PlayerView() }
         .fullScreenCover(isPresented: $playback.videoPresented) { VideoPlayerScreen() }
         .alert("Lecture", isPresented: Binding(get: { playback.errorMessage != nil }, set: { if !$0 { playback.errorMessage = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(playback.errorMessage ?? "") }
-        .preferredColorScheme(settings.preferredColorScheme)
         .transaction { if !eco.policy.animations { $0.animation = nil } }
+    }
+}
+
+/// Dock flottant : mini-lecteur permanent + barre d'onglets, en verre.
+struct Dock: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            MiniPlayerView()
+            TabBarView()
+        }
+        .padding(.horizontal, 12).padding(.bottom, 4)
+    }
+}
+
+struct TabBarView: View {
+    @EnvironmentObject var coordinator: AppCoordinator
+    @EnvironmentObject var settings: AppSettings
+    private let tabs: [(AppTab, String, String)] = [
+        (.home, "Accueil", "house.fill"), (.library, "Biblio", "music.note.list"),
+        (.browser, "Explorer", "globe"), (.downloads, "Télécharg.", "arrow.down.circle.fill"),
+        (.settings, "Réglages", "gearshape.fill")
+    ]
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(tabs, id: \.0) { tab, label, icon in
+                let selected = coordinator.selectedTab == tab
+                Button { settings.tap(); coordinator.selectedTab = tab } label: {
+                    VStack(spacing: 2) {
+                        Image(systemName: icon).font(.system(size: 19, weight: .semibold))
+                        Text(label).font(.system(size: 10, weight: .medium)).lineLimit(1)
+                    }
+                    .foregroundStyle(selected ? AnyShapeStyle(LinearGradient(colors: [Theme.accent, Theme.accent2], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.secondary))
+                    .frame(maxWidth: .infinity).padding(.vertical, 7)
+                    .background {
+                        if selected { Capsule().fill(Theme.accent.opacity(0.16)).overlay(Capsule().strokeBorder(Theme.edge.opacity(0.5), lineWidth: 0.5)) }
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(label)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .padding(5)
+        .glassSurface(radius: 30)
     }
 }
 
@@ -50,9 +102,8 @@ struct MiniPlayerView: View {
                 Spacer()
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .surface()
-        .padding(.horizontal, 10).padding(.bottom, 4)
+        .padding(.horizontal, 12).padding(.vertical, 5)
+        .glassSurface(radius: 26)
         .contentShape(Rectangle())
         .onTapGesture {
             guard playback.current != nil else { return }

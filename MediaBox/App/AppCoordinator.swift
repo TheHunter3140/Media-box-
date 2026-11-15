@@ -50,10 +50,6 @@ final class AppCoordinator: ObservableObject {
             self?.browser.discard()
         }
         downloads.onCompleted = { [weak self] _ in self?.library.scanAll() }
-        $selectedTab.removeDuplicates().sink { [weak self] tab in
-            guard let self = self, self.started else { return }
-            if tab == .browser { self.browser.pageShown() } else { self.browser.pageHidden() }
-        }.store(in: &bag)
     }
 
     func start() async {

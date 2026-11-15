@@ -30,14 +30,14 @@ struct VideoPlayerScreen: View {
                     Button { withAnimation { showPanel.toggle() } } label: { Image(systemName: "sun.max") }.accessibilityLabel("Luminosité et volume")
                 }
                 .font(.title3).foregroundColor(.white).padding(12)
-                .background(Color.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .glassSurface(radius: 20)
                 if showPanel {
                     VStack(spacing: 10) {
                         HStack { Image(systemName: "sun.min"); Slider(value: $brightness, in: 0.05...1) { _ in UIScreen.main.brightness = CGFloat(brightness) }; Image(systemName: "sun.max") }
                         HStack { Image(systemName: "speaker"); SystemVolumeView().frame(height: 30); Image(systemName: "speaker.wave.3") }
                     }
                     .foregroundColor(.white).padding(12)
-                    .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .glassSurface(radius: 20)
                 }
             }
             .padding(.horizontal, 12).padding(.top, 8)

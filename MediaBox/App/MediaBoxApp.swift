@@ -51,7 +51,7 @@ struct MediaBoxApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            ThemedRoot()
                 .environmentObject(coordinator)
                 .environmentObject(coordinator.settings)
                 .environmentObject(EcoCore.shared)

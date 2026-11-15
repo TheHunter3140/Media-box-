@@ -49,11 +49,11 @@ struct DownloadsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("En cours") {
+                GSection("En cours") {
                     if manager.tasks.isEmpty { Text("Aucun téléchargement.").foregroundColor(.secondary) }
                     ForEach(manager.tasks) { DownloadRow(task: $0, manager: manager) }
                 }
-                Section("Historique") {
+                GSection("Historique") {
                     ForEach(manager.history.entries.prefix(50)) { e in
                         VStack(alignment: .leading) {
                             HStack { Text(e.filename).lineLimit(1); Spacer()
@@ -66,6 +66,7 @@ struct DownloadsView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Téléchargements")
             .toolbar { Button { showAdd = true } label: { Image(systemName: "plus") } }
             .sheet(isPresented: $showAdd) { addSheet }
@@ -84,16 +85,17 @@ struct DownloadsView: View {
     private var addSheet: some View {
         NavigationStack {
             Form {
-                Section("Lien direct vers un fichier") {
+                GSection("Lien direct vers un fichier") {
                     TextField("https://…/fichier.mp3", text: $urlText)
                         .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     Picker("Destination", selection: $dest) { ForEach(DownloadDestination.allCases) { Text($0.label).tag($0) } }
                 }
-                Section {
+                GSection {
                     Button(addingBusy ? "Vérification…" : "Ajouter") { Task { await add() } }.disabled(addingBusy || urlText.isEmpty)
                 }
-                Section { Text("Seuls les liens directs vers des fichiers audio/vidéo sont acceptés. YouTube n'est pas pris en charge (conditions d'utilisation).").font(.footnote).foregroundColor(.secondary) }
+                GSection { Text("Liens directs vers des fichiers audio/vidéo, ou liens SoundCloud/Vimeo téléchargeables via l'API officielle (jeton dans Réglages > Services). Les autres plateformes protègent leurs contenus : lecture via le site officiel.").font(.footnote).foregroundColor(.secondary) }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Nouveau téléchargement")
             .toolbar { Button("Fermer") { showAdd = false } }
         }
@@ -101,6 +103,14 @@ struct DownloadsView: View {
 
     private func add() async {
         guard let url = URL(string: urlText.trimmingCharacters(in: .whitespacesAndNewlines)) else { message = "Lien invalide."; return }
+        if ServiceRouter.service(for: url) != nil {
+            addingBusy = true
+            let msg = await ServiceDownloader.start(url: url, downloads: manager)
+            addingBusy = false
+            message = msg
+            if msg.hasPrefix("Ajouté") { showAdd = false; urlText = "" }
+            return
+        }
         switch SourceAdapters.resolve(url) {
         case .refused(let why):
             addingBusy = true

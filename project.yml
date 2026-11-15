@@ -9,7 +9,7 @@ settings:
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: minimal
     MARKETING_VERSION: "0.2.0"
-    CURRENT_PROJECT_VERSION: "2"
+    CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1"
     DEVELOPMENT_TEAM: ""
 targets:
@@ -48,7 +48,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.local.mediabox
         PRODUCT_NAME: MediaBox
         ENABLE_TESTABILITY: YES
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   MediaBoxTests:
     type: bundle.unit-test
     platform: iOS

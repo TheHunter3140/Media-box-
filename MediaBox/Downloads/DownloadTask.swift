@@ -65,6 +65,7 @@ final class DownloadTask: ObservableObject, Identifiable {
     @Published var errorMessage: String?
     var resumeData: Data?
     var ecoPaused = false
+    var headers: [String: String] = [:]   // non persistés (jetons)
     var urlTask: URLSessionDownloadTask?
     private var lastBytes: Int64 = 0
     private var lastDate = Date()

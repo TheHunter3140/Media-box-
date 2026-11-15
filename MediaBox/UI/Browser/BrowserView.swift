@@ -3,8 +3,8 @@ import SwiftUI
 struct BrowserView: View {
     @EnvironmentObject var browser: BrowserManager
     @EnvironmentObject var downloads: DownloadManager
-    @EnvironmentObject var settings: AppSettings
     @State private var message: String?
+    @State private var busy = false
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -16,22 +16,21 @@ struct BrowserView: View {
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .keyboardType(.webSearch).focused($focused)
                     .onSubmit { browser.go(browser.addressText); focused = false }
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    .glassCard(radius: 14)
                 Button { browser.reload() } label: { Image(systemName: browser.isLoading ? "xmark" : "arrow.clockwise") }.accessibilityLabel("Actualiser")
             }.padding(.horizontal, 12).padding(.vertical, 8)
             if browser.isLoading { ProgressView(value: browser.progress).padding(.horizontal, 12) }
-            if browser.isYouTubePage {
-                Label("YouTube : lecture via le service officiel. Les téléchargements protégés ne sont pas disponibles dans MediaBox.", systemImage: "info.circle")
-                    .font(.caption).padding(8).frame(maxWidth: .infinity, alignment: .leading).background(Color.yellow.opacity(0.16))
-            }
+            if let s = browser.currentService { serviceBanner(s) }
             if let wv = browser.webView {
                 WebViewContainer(webView: wv)
             } else {
                 Spacer(); ProgressView(); Spacer()
             }
         }
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear { browser.pageShown() }
+        .onDisappear { browser.pageHidden() }
         .sheet(item: $browser.pendingDownload) { file in
             DetectedFileSheet(file: file) { dest in
                 Task {
@@ -43,6 +42,29 @@ struct BrowserView: View {
         .alert("Téléchargement", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(message ?? "") }
+    }
+
+    @ViewBuilder
+    private func serviceBanner(_ s: MediaService) -> some View {
+        let c = Color(red: s.rgb.0, green: s.rgb.1, blue: s.rgb.2)
+        HStack(spacing: 10) {
+            Image(systemName: s.symbol).foregroundColor(c)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(s.name).font(.footnote.weight(.semibold))
+                switch s.download {
+                case .none: Text("Lecture officielle. Téléchargement non pris en charge.").font(.caption2).foregroundColor(.secondary)
+                case .officialAPI: Text("Téléchargement possible si l'auteur l'autorise.").font(.caption2).foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            if s.supportsAPIDownload, let u = browser.webView?.url {
+                Button(busy ? "…" : "Télécharger") {
+                    busy = true
+                    Task { message = await ServiceDownloader.start(url: u, downloads: downloads); busy = false }
+                }.font(.footnote.weight(.semibold)).disabled(busy)
+            }
+        }
+        .padding(10).glassCard(radius: 14).padding(.horizontal, 12).padding(.bottom, 6)
     }
 
     private func handle(_ r: EnqueueResult) {
@@ -64,19 +86,20 @@ struct DetectedFileSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Fichier détecté") {
+                GSection("Fichier détecté") {
                     Text(file.filename)
                     Text(file.url.absoluteString).font(.caption).foregroundColor(.secondary).lineLimit(3)
                 }
-                Section("Destination") {
+                GSection("Destination") {
                     Picker("Dossier", selection: $dest) { ForEach(DownloadDestination.allCases) { Text($0.label).tag($0) } }
                 }
-                Section {
+                GSection {
                     Button("Télécharger") { onDownload(dest); dismiss() }
                     Button("Ignorer et ouvrir dans la page", role: .cancel) { browser.ignoreDetected(); dismiss() }
                 }
-                Section { Text("Télécharge uniquement des fichiers auxquels tu as légitimement accès et dont les droits te le permettent.").font(.footnote).foregroundColor(.secondary) }
+                GSection { Text("Télécharge uniquement des fichiers auxquels tu as légitimement accès et dont les droits te le permettent.").font(.footnote).foregroundColor(.secondary) }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Télécharger ?")
         }
     }

@@ -14,7 +14,7 @@ struct PlayerView: View {
             Capsule().fill(Color.secondary.opacity(0.4)).frame(width: 40, height: 5).padding(.top, 8)
             Spacer(minLength: 0)
             if let c = playback.current {
-                ArtworkView(item: c, size: 280, pixel: 600).shadow(radius: 12, y: 6)
+                ArtworkView(item: c, size: 280, pixel: 600).shadow(color: Theme.accent.opacity(0.35), radius: 24, y: 8)
                 VStack(spacing: 4) {
                     Text(c.title).font(.title3.weight(.semibold)).multilineTextAlignment(.center).lineLimit(2)
                     Text(c.displayArtist).foregroundColor(.secondary)
@@ -35,7 +35,9 @@ struct PlayerView: View {
             HStack(spacing: 34) {
                 Button { settings.tap(); playback.previous() } label: { Image(systemName: "backward.fill").font(.title) }.accessibilityLabel("Précédent")
                 Button { settings.tap(); playback.toggle() } label: {
-                    Image(systemName: playback.isPlaying ? "pause.circle.fill" : "play.circle.fill").font(.system(size: 64))
+                    Image(systemName: playback.isPlaying ? "pause.circle.fill" : "play.circle.fill").font(.system(size: 68))
+                        .foregroundStyle(LinearGradient(colors: [Theme.accent, Theme.accent2], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .shadow(color: Theme.accent.opacity(0.55), radius: 14)
                 }.accessibilityLabel(playback.isPlaying ? "Pause" : "Lecture")
                 Button { settings.tap(); playback.next() } label: { Image(systemName: "forward.fill").font(.title) }.accessibilityLabel("Suivant")
             }
@@ -64,6 +66,7 @@ struct PlayerView: View {
             Spacer(minLength: 0)
         }
         .padding(.bottom)
+        .background(GlassBackground())
         .sheet(isPresented: $showSleep) { SleepTimerView() }
         .sheet(isPresented: $showQueue) { QueueView() }
         .onAppear { clock.setWanted(true); clock.tick() }
@@ -76,8 +79,8 @@ struct QueueView: View {
     var body: some View {
         NavigationStack {
             List {
-                if let c = playback.current { Section("En lecture") { MediaRow(item: c) } }
-                Section("À suivre") {
+                if let c = playback.current { GSection("En lecture") { MediaRow(item: c) } }
+                GSection("À suivre") {
                     ForEach(playback.queue.upcoming.prefix(100)) { item in
                         Button { playback.jump(to: item) } label: { MediaRow(item: item) }.buttonStyle(.plain)
                     }
@@ -97,31 +100,32 @@ struct SleepTimerView: View {
         NavigationStack {
             Form {
                 if timer.isActive {
-                    Section {
+                    GSection {
                         if let d = timer.fireDate { Text("Arrêt à \(d.formatted(date: .omitted, time: .shortened))") }
                         else { Text(timer.mode == .afterTrack ? "Arrêt après ce morceau" : "Arrêt après la file de lecture") }
                         Button("Annuler le minuteur", role: .destructive) { timer.cancel(); dismiss() }
                     }
                 }
-                Section("Durée") {
+                GSection("Durée") {
                     ForEach([15, 30, 45, 60, 90], id: \.self) { m in
                         Button(m == 60 ? "1 heure" : m == 90 ? "1 h 30" : "\(m) minutes") { timer.start(.duration(Double(m) * 60)); dismiss() }
                     }
                     Stepper("Personnalisée : \(customMinutes) min", value: $customMinutes, in: 1...600)
                     Button("Démarrer \(customMinutes) min") { timer.start(.duration(Double(customMinutes) * 60)); dismiss() }
                 }
-                Section("Heure précise") {
+                GSection("Heure précise") {
                     DatePicker("Arrêt à", selection: $clockTime, displayedComponents: .hourAndMinute)
                     Button("Programmer") { timer.start(.atTime(clockTime)); dismiss() }
                 }
-                Section("Fin de contenu") {
+                GSection("Fin de contenu") {
                     Button("Après ce morceau") { timer.start(.afterTrack); dismiss() }
                     Button("Après la playlist / file") { timer.start(.afterQueue); dismiss() }
                 }
-                Section("Diminution progressive du volume") {
+                GSection("Diminution progressive du volume") {
                     Stepper("\(Int(timer.fadeSeconds)) secondes", value: $timer.fadeSeconds, in: 0...60, step: 5)
                 }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Minuteur de sommeil")
             .toolbar { Button("Fermer") { dismiss() } }
         }

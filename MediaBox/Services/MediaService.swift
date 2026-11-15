@@ -1,24 +1,97 @@
 import Foundation
 
-/// Services accessibles via leurs sites officiels. L'ouverture web ne constitue
-/// pas une intégration SDK ni une autorisation de télécharger leurs contenus.
-struct MediaService: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let subtitle: String
-    let symbol: String
-    let host: String
-    let url: URL
-    let tintName: String
-    let downloadNote: String
+enum DownloadSupport: Equatable {
+    /// Aucun téléchargement possible dans MediaBox (protection / conditions d'utilisation). Le texte explique pourquoi.
+    case none(String)
+    /// Téléchargement possible uniquement via l'API officielle, quand le propriétaire l'autorise (jeton personnel requis).
+    case officialAPI(String)
+}
 
-    static let all: [MediaService] = [
-        .init(id: "youtube", name: "YouTube", subtitle: "Vidéos & musique", symbol: "play.rectangle.fill", host: "youtube.com", url: URL(string: "https://www.youtube.com")!, tintName: "red", downloadNote: "Lecture via le site officiel. Aucun extracteur ni contournement de téléchargement."),
-        .init(id: "soundcloud", name: "SoundCloud", subtitle: "Découvertes audio", symbol: "waveform", host: "soundcloud.com", url: URL(string: "https://soundcloud.com")!, tintName: "orange", downloadNote: "Téléchargement uniquement si le créateur active l'option officielle ou fournit un fichier autorisé."),
-        .init(id: "spotify", name: "Spotify", subtitle: "Musique & podcasts", symbol: "waveform.circle.fill", host: "open.spotify.com", url: URL(string: "https://open.spotify.com")!, tintName: "green", downloadNote: "Le mode hors ligne reste géré par Spotify. MediaBox ne copie pas les titres protégés."),
-        .init(id: "vimeo", name: "Vimeo", subtitle: "Vidéo & création", symbol: "v.circle.fill", host: "vimeo.com", url: URL(string: "https://vimeo.com")!, tintName: "blue", downloadNote: "Import possible depuis un lien ou export explicitement autorisé par le propriétaire."),
-        .init(id: "dailymotion", name: "Dailymotion", subtitle: "Actualités & vidéos", symbol: "play.tv.fill", host: "dailymotion.com", url: URL(string: "https://www.dailymotion.com")!, tintName: "indigo", downloadNote: "Lecture web officielle. Pas d'extraction de flux protégés."),
-        .init(id: "tiktok", name: "TikTok", subtitle: "Clips & tendances", symbol: "music.note", host: "tiktok.com", url: URL(string: "https://www.tiktok.com")!, tintName: "pink", downloadNote: "Utiliser les fonctions de partage/enregistrement prévues par TikTok et les droits du créateur."),
-        .init(id: "twitch", name: "Twitch", subtitle: "Live & replay", symbol: "dot.radiowaves.left.and.right", host: "twitch.tv", url: URL(string: "https://www.twitch.tv")!, tintName: "purple", downloadNote: "Les VOD et clips ne sont importables que via une exportation autorisée."),
-    ]
+enum MediaService: String, CaseIterable, Identifiable {
+    case youtube, soundcloud, spotify, vimeo, dailymotion, tiktok, twitch
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .youtube: return "YouTube"
+        case .soundcloud: return "SoundCloud"
+        case .spotify: return "Spotify"
+        case .vimeo: return "Vimeo"
+        case .dailymotion: return "Dailymotion"
+        case .tiktok: return "TikTok"
+        case .twitch: return "Twitch"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .youtube: return "play.rectangle.fill"
+        case .soundcloud: return "waveform"
+        case .spotify: return "music.note"
+        case .vimeo: return "film.fill"
+        case .dailymotion: return "play.tv.fill"
+        case .tiktok: return "music.note.tv.fill"
+        case .twitch: return "dot.radiowaves.left.and.right"
+        }
+    }
+    var rgb: (Double, Double, Double) {
+        switch self {
+        case .youtube: return (1.00, 0.20, 0.25)
+        case .soundcloud: return (1.00, 0.45, 0.10)
+        case .spotify: return (0.12, 0.84, 0.38)
+        case .vimeo: return (0.10, 0.72, 0.93)
+        case .dailymotion: return (0.15, 0.45, 1.00)
+        case .tiktok: return (0.95, 0.20, 0.55)
+        case .twitch: return (0.60, 0.35, 1.00)
+        }
+    }
+    var homeURL: URL {
+        switch self {
+        case .youtube: return URL(string: "https://m.youtube.com")!
+        case .soundcloud: return URL(string: "https://soundcloud.com")!
+        case .spotify: return URL(string: "https://open.spotify.com")!
+        case .vimeo: return URL(string: "https://vimeo.com")!
+        case .dailymotion: return URL(string: "https://www.dailymotion.com")!
+        case .tiktok: return URL(string: "https://www.tiktok.com")!
+        case .twitch: return URL(string: "https://m.twitch.tv")!
+        }
+    }
+    var hosts: [String] {
+        switch self {
+        case .youtube: return ["youtube.com", "youtu.be", "youtube-nocookie.com"]
+        case .soundcloud: return ["soundcloud.com", "snd.sc"]
+        case .spotify: return ["spotify.com", "spotify.link"]
+        case .vimeo: return ["vimeo.com"]
+        case .dailymotion: return ["dailymotion.com", "dai.ly"]
+        case .tiktok: return ["tiktok.com"]
+        case .twitch: return ["twitch.tv"]
+        }
+    }
+    var playbackNote: String {
+        switch self {
+        case .spotify: return "Lecture via le lecteur web officiel ou l'app Spotify (compte requis)."
+        default: return "Lecture via le site officiel intégré au navigateur de MediaBox."
+        }
+    }
+    var download: DownloadSupport {
+        switch self {
+        case .youtube: return .none("YouTube n'autorise pas le téléchargement hors de ses offres officielles (YouTube Premium, ou Google Takeout pour tes propres contenus). Importe ensuite les fichiers depuis Fichiers.")
+        case .spotify: return .none("Les titres Spotify sont protégés (DRM) : écoute via l'app Spotify, et hors connexion avec Spotify Premium dans l'app.")
+        case .tiktok: return .none("TikTok ne propose le téléchargement que depuis son app, sur les vidéos dont le créateur l'autorise.")
+        case .twitch: return .none("Twitch ne permet pas d'enregistrer les directs ni les rediffusions d'autrui. Pour tes propres diffusions, utilise le tableau de bord créateur de Twitch.")
+        case .dailymotion: return .none("Dailymotion ne propose pas de téléchargement public : lecture via le site officiel.")
+        case .soundcloud: return .officialAPI("Titres que l'artiste a rendus téléchargeables, via l'API officielle de SoundCloud (jeton personnel requis).")
+        case .vimeo: return .officialAPI("Vidéos dont le propriétaire autorise le téléchargement, via l'API Vimeo (jeton d'accès personnel requis).")
+        }
+    }
+    var supportsAPIDownload: Bool { if case .officialAPI = download { return true } else { return false } }
+}
+
+enum ServiceRouter {
+    static func service(for url: URL) -> MediaService? {
+        guard let host = url.host?.lowercased() else { return nil }
+        for s in MediaService.allCases {
+            for h in s.hosts where host == h || host.hasSuffix("." + h) { return s }
+        }
+        return nil
+    }
 }

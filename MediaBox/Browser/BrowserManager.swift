@@ -61,7 +61,7 @@ final class BrowserManager: ObservableObject {
     @Published private(set) var canGoBack = false
     @Published private(set) var canGoForward = false
     @Published private(set) var isLoading = false
-    @Published private(set) var isYouTubePage = false
+    @Published private(set) var currentService: MediaService?
     @Published var pendingDownload: DetectedFile?
 
     let history: BrowserHistory
@@ -164,26 +164,19 @@ final class BrowserManager: ObservableObject {
     }
 
     func open(_ url: URL) {
-        if webView == nil { pageShown() }
-        webView?.load(URLRequest(url: url))
+        lastURL = url
+        if let wv = webView { wv.load(URLRequest(url: url)) } else { pageShown() }
     }
     func back() { webView?.goBack() }
     func forward() { webView?.goForward() }
-    func reload() {
-        guard let webView else { return }
-        if isLoading {
-            webView.stopLoading()
-        } else {
-            _ = webView.reload()
-        }
-    }
+    func reload() { isLoading ? webView?.stopLoading() : webView?.reload() }
 
     func didFinish() {
         guard let wv = webView else { return }
         title = wv.title ?? ""
         if let u = wv.url {
             addressText = u.absoluteString
-            isYouTubePage = SourceResolver.isYouTube(u)
+            currentService = ServiceRouter.service(for: u)
             history.add(url: u.absoluteString, title: title)
         }
         MemoryManager.shared.checkBudget(reason: "page web")
@@ -191,7 +184,7 @@ final class BrowserManager: ObservableObject {
 
     // MARK: Détection de fichiers
     func detected(url: URL, suggested: String?) {
-        if SourceResolver.isYouTube(url) { return }
+        if ServiceRouter.service(for: url) != nil { return }
         let kind = SourceResolver.classify(url)
         var name = SourceResolver.suggestedFileName(for: url)
         if (name as NSString).pathExtension.isEmpty, let s = suggested { name = FileManagerService.sanitize(s) }

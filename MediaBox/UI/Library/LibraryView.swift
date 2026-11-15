@@ -44,6 +44,7 @@ struct LibraryView: View {
                     .pickerStyle(.segmented).padding(.horizontal).padding(.bottom, 6)
                 if segment == .playlists { playlistList } else { mediaList }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle("Bibliothèque")
             .searchable(text: $search, prompt: "Rechercher")
             .toolbar {
@@ -103,7 +104,7 @@ struct LibraryView: View {
                     }
             }
         }
-        .listStyle(.plain)
+        .listStyle(.plain).scrollContentBackground(.hidden)
     }
 
     private var playlistList: some View {
@@ -115,7 +116,7 @@ struct LibraryView: View {
                 }
             }
             .onDelete { idx in idx.map { playlists.playlists[$0].id }.forEach { playlists.delete($0) } }
-        }.listStyle(.plain)
+        }.listStyle(.plain).scrollContentBackground(.hidden)
     }
 }
 
@@ -135,6 +136,7 @@ struct PlaylistDetailView: View {
                 .onDelete { playlists.remove(at: $0, from: playlistID) }
                 .onMove { playlists.move(from: $0, to: $1, in: playlistID) }
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle(p.name)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {

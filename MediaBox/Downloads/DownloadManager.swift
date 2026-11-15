@@ -112,7 +112,7 @@ final class DownloadManager: ObservableObject {
     }
 
     // MARK: Ajout
-    func enqueue(url: URL, name: String?, destination: DownloadDestination, force: Bool = false) -> EnqueueResult {
+    func enqueue(url: URL, name: String?, destination: DownloadDestination, force: Bool = false, headers: [String: String] = [:]) -> EnqueueResult {
         let filename = FileManagerService.sanitize(name ?? SourceResolver.suggestedFileName(for: url))
         if tasks.contains(where: { $0.url == url && $0.isActive }) { return .alreadyActive }
         if !force, let e = history.contains(url: url.absoluteString) {
@@ -121,6 +121,7 @@ final class DownloadManager: ObservableObject {
         var dest = destination
         if dest == .auto { dest = SourceResolver.destination(for: SourceResolver.classify(url)) }
         let t = DownloadTask(url: url, filename: filename, destination: dest)
+        t.headers = headers
         tasks.insert(t, at: 0)
         persistSoon()
         pump()
@@ -186,6 +187,7 @@ final class DownloadManager: ObservableObject {
         } else {
             var req = URLRequest(url: t.url)
             req.timeoutInterval = 60
+            for (k, v) in t.headers { req.setValue(v, forHTTPHeaderField: k) }
             urlTask = session.downloadTask(with: req)
         }
         t.resumeData = nil

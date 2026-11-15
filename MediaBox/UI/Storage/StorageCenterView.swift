@@ -13,7 +13,7 @@ struct StorageCenterView: View {
 
     var body: some View {
         List {
-            Section("Mémoire de MediaBox") {
+            GSection("Mémoire de MediaBox") {
                 row("Utilisée", Format.mb(memory.currentBytes))
                 row("Pic enregistré", Format.mb(memory.peakBytes))
                 row("Objectif de conception", "100 Mo")
@@ -30,11 +30,11 @@ struct StorageCenterView: View {
                 Button("Libérer les ressources de MediaBox") { memory.shed(upTo: .freeInactiveModules, reason: "manuel", stopWhenUnderBudget: false); refreshCache() }
                 Text("Libère uniquement les caches et modules de MediaBox ; cela ne vide pas la RAM d'iOS.").font(.caption).foregroundColor(.secondary)
             }
-            Section("Caches et miniatures") {
+            GSection("Caches et miniatures") {
                 row("Miniatures sur disque", Format.bytes(cacheSize))
                 Button("Vider les miniatures") { CacheManager.shared.purgeAll(); refreshCache() }
             }
-            Section("Stockage") {
+            GSection("Stockage") {
                 row("Espace libre sur l'iPhone", Format.bytes(storage.report.freeSpace))
                 row("Musique (dossier MediaBox)", Format.bytes(storage.report.musicBytes))
                 row("Vidéos (dossier MediaBox)", Format.bytes(storage.report.videosBytes))
@@ -43,7 +43,7 @@ struct StorageCenterView: View {
                 row("Base de données", Format.bytes(storage.report.supportBytes))
                 Button(storage.busy ? "Analyse…" : "Analyser") { Task { await storage.analyze(); refreshCache() } }.disabled(storage.busy)
             }
-            Section("Plus gros fichiers") {
+            GSection("Plus gros fichiers") {
                 if storage.largeFiles.isEmpty { Text("Lance une analyse.").foregroundColor(.secondary) }
                 ForEach(storage.largeFiles) { it in
                     HStack { VStack(alignment: .leading) { Text(it.title).lineLimit(1); Text(it.kind == .video ? "Vidéo" : it.displayArtist).font(.caption).foregroundColor(.secondary) }
@@ -51,7 +51,7 @@ struct StorageCenterView: View {
                         .swipeActions { Button(role: .destructive) { confirmDelete = it } label: { Label("Supprimer", systemImage: "trash") } }
                 }
             }
-            Section("Doublons") {
+            GSection("Doublons") {
                 Button(storage.busy ? "Recherche…" : "Rechercher les doublons") { Task { await storage.findDuplicates() } }.disabled(storage.busy)
                 ForEach(Array(storage.duplicateGroups.enumerated()), id: \.offset) { _, group in
                     VStack(alignment: .leading) {
@@ -64,17 +64,18 @@ struct StorageCenterView: View {
                 }
                 Text("Comparaison par taille, durée et empreinte partielle (début + fin du fichier), uniquement à la demande.").font(.caption).foregroundColor(.secondary)
             }
-            Section("Anciens téléchargements (> 30 jours)") {
+            GSection("Anciens téléchargements (> 30 jours)") {
                 ForEach(storage.oldDownloads) { e in
                     HStack { Text(e.filename).lineLimit(1); Spacer(); Text(Format.bytes(e.bytes)).foregroundColor(.secondary) }
                 }
                 if storage.oldDownloads.isEmpty { Text("Aucun.").foregroundColor(.secondary) }
             }
-            Section("Historique") {
+            GSection("Historique") {
                 Button("Effacer l'historique du navigateur", role: .destructive) { confirmClean = true }
                 Button("Effacer l'historique des téléchargements", role: .destructive) { downloads.history.clear() }
             }
         }
+        .scrollContentBackground(.hidden)
         .navigationTitle("Mémoire et stockage")
         .onAppear { snapshot = ResourceMonitor.shared.capture(); refreshCache(); Task { await storage.analyze() } }
         .confirmationDialog("Supprimer ce fichier ?", isPresented: Binding(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } }), titleVisibility: .visible) {

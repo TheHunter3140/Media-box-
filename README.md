@@ -1,4 +1,4 @@
-# MediaBox 0.1.2 (développement)
+# MediaBox 0.2.0 (développement)
 
 Lecteur multimédia iOS natif (Swift / SwiftUI), pensé pour iPhone XR (A12) : léger, économe, sans dépendance externe.
 Minimum iOS 16 (référence : iOS 18.7.9). Bundle ID : `com.local.mediabox`.
@@ -8,6 +8,16 @@ Minimum iOS 16 (référence : iOS 18.7.9). Bundle ID : `com.local.mediabox`.
 2. Onglet Actions → « Build MediaBox (IPA non signé) » → Run workflow.
 3. Télécharge l'artefact `MediaBox-unsigned-ipa`, puis signe l'IPA avec ta méthode habituelle (voir ton flux de sideloading).
 4. Le job `tests` (simulateur) est facultatif : il n'empêche pas la livraison de l'IPA.
+
+## Services (0.2.0)
+Onglet **Explorer** : YouTube, SoundCloud, Spotify, Vimeo, Dailymotion, TikTok, Twitch.
+- Lecture : via le site officiel dans le navigateur intégré, ou ouverture dans l'app officielle (appui long).
+- Téléchargement : uniquement quand la plateforme l'autorise officiellement. SoundCloud (titres téléchargeables) et Vimeo (vidéos dont le propriétaire l'autorise) passent par leur API avec ton jeton personnel (Réglages > Services). YouTube, Spotify, TikTok, Twitch et Dailymotion : pas de téléchargement (protections / conditions d'utilisation) ; MediaBox l'explique au lieu de contourner.
+- Les appels API SoundCloud/Vimeo n'ont jamais été testés avec un vrai compte.
+
+## Design Liquid Glass
+Fond dégradé + halos (sombre lumineux / clair élégant / système, réglable), dock flottant en verre (mini-lecteur + onglets).
+Sur iOS 26 avec un build Xcode 26 : vrai Liquid Glass ; sinon (iOS 18 sur ton XR) matériau translucide. Le flou n'est utilisé que sur 2 éléments ; les cartes sont en verre à plat (sans flou). EcoCore coupe le flou en mode économique/thermique.
 
 ## Dossiers
 Au premier lancement, MediaBox crée `Sur mon iPhone > MediaBox` (Fichiers) avec `Musique`, `Vidéos`, `Téléchargements` : tout fichier déposé est indexé automatiquement.
@@ -23,21 +33,3 @@ Stockage : JSON atomique dans Application Support (choix justifié : zéro dépe
 - Sous-titres : pistes intégrées uniquement (pas de .srt externe).
 - Le « fondu » est un fondu sortant puis entrant (pas de chevauchement de deux pistes).
 - Aucune valeur de mémoire/CPU/autonomie n'est annoncée ici : elles doivent être mesurées sur iPhone XR (voir `docs/BENCHMARK.md`).
-
-
-## CI, erreurs et publication
-
-- Chaque push sur `main` déclenche une compilation iOS et les tests sur simulateur.
-- Les journaux `build.log` et `test.log` sont conservés comme artefacts.
-- En cas d'échec, le workflow crée une issue GitHub ou ajoute un commentaire à l'issue d'échec déjà ouverte.
-- Chaque push réussi sur `main` met à jour automatiquement la préversion GitHub `nightly` après réussite du build et des tests.
-- Pour publier une version stable, pousser un tag versionné, par exemple `v0.1.1`. La release stable ne sera créée qu'après réussite de la compilation et des tests.
-- L'IPA publié est **non signé**. Pour une installation directe, il faut encore le signer avec un certificat et un profil valides. La publication App Store nécessite un flux Apple Developer distinct.
-
-
-## Correctif 0.1.2
-Cette version corrige l'erreur de compilation `Void?` / `WKNavigation?` dans `BrowserManager.reload()`. Relance GitHub Actions pour vérifier le build et découvrir d'éventuelles erreurs suivantes.
-
-
-## Version 0.2.0 — refonte de l'accueil
-L'accueil présente maintenant un hub vers YouTube, SoundCloud, Spotify, Vimeo, Dailymotion, TikTok et Twitch. Les liens ouvrent les sites officiels dans le navigateur MediaBox. Le thème peut suivre iOS ou être forcé en clair/sombre. Les intégrations SDK/OAuth spécifiques et les téléchargements de contenus protégés ne sont pas inclus : seuls les fichiers directs et exports autorisés sont importables.
