@@ -23,3 +23,13 @@ Stockage : JSON atomique dans Application Support (choix justifié : zéro dépe
 - Sous-titres : pistes intégrées uniquement (pas de .srt externe).
 - Le « fondu » est un fondu sortant puis entrant (pas de chevauchement de deux pistes).
 - Aucune valeur de mémoire/CPU/autonomie n'est annoncée ici : elles doivent être mesurées sur iPhone XR (voir `docs/BENCHMARK.md`).
+
+
+## CI, erreurs et publication
+
+- Chaque push sur `main` déclenche une compilation iOS et les tests sur simulateur.
+- Les journaux `build.log` et `test.log` sont conservés comme artefacts.
+- En cas d'échec, le workflow crée une issue GitHub ou ajoute un commentaire à l'issue d'échec déjà ouverte.
+- Chaque push réussi sur `main` met à jour automatiquement la préversion GitHub `nightly` après réussite du build et des tests.
+- Pour publier une version stable, pousser un tag versionné, par exemple `v0.1.1`. La release stable ne sera créée qu'après réussite de la compilation et des tests.
+- L'IPA publié est **non signé**. Pour une installation directe, il faut encore le signer avec un certificat et un profil valides. La publication App Store nécessite un flux Apple Developer distinct.
