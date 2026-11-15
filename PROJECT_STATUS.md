@@ -24,3 +24,9 @@ Toutes les sections du cahier des charges ont une première implémentation.
 - L'IPA reste non signé : aucune installation automatique sur iPhone ni publication App Store n'est réalisée par ce workflow.
 
 **Important :** cette révision n'est pas déclarée compilée. Le conteneur d'audit ne dispose pas de Xcode ni du SDK iOS. La validation finale doit être faite par GitHub Actions sur macOS, puis sur un iPhone XR réel.
+
+
+## Révision 0.1.2 — correction ciblée du build
+- Corrigé `BrowserManager.reload()` pour supprimer l'incompatibilité de types dans l'opérateur ternaire signalée par GitHub Actions.
+- Cette correction est fondée sur le diagnostic de build fourni par l'utilisateur.
+- Compilation non exécutée localement : elle doit être confirmée par une nouvelle exécution GitHub Actions.

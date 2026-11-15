@@ -169,7 +169,14 @@ final class BrowserManager: ObservableObject {
     }
     func back() { webView?.goBack() }
     func forward() { webView?.goForward() }
-    func reload() { isLoading ? webView?.stopLoading() : webView?.reload() }
+    func reload() {
+        guard let webView else { return }
+        if isLoading {
+            webView.stopLoading()
+        } else {
+            _ = webView.reload()
+        }
+    }
 
     func didFinish() {
         guard let wv = webView else { return }

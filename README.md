@@ -1,4 +1,4 @@
-# MediaBox 0.1.0 (développement)
+# MediaBox 0.1.2 (développement)
 
 Lecteur multimédia iOS natif (Swift / SwiftUI), pensé pour iPhone XR (A12) : léger, économe, sans dépendance externe.
 Minimum iOS 16 (référence : iOS 18.7.9). Bundle ID : `com.local.mediabox`.
@@ -33,3 +33,7 @@ Stockage : JSON atomique dans Application Support (choix justifié : zéro dépe
 - Chaque push réussi sur `main` met à jour automatiquement la préversion GitHub `nightly` après réussite du build et des tests.
 - Pour publier une version stable, pousser un tag versionné, par exemple `v0.1.1`. La release stable ne sera créée qu'après réussite de la compilation et des tests.
 - L'IPA publié est **non signé**. Pour une installation directe, il faut encore le signer avec un certificat et un profil valides. La publication App Store nécessite un flux Apple Developer distinct.
+
+
+## Correctif 0.1.2
+Cette version corrige l'erreur de compilation `Void?` / `WKNavigation?` dans `BrowserManager.reload()`. Relance GitHub Actions pour vérifier le build et découvrir d'éventuelles erreurs suivantes.

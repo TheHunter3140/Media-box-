@@ -1,0 +1,199 @@
+name: MediaBox — CI, diagnostics et releases
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  build:
+    name: Build iOS (IPA non signé)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Choisir Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Installer XcodeGen
+        run: brew install xcodegen
+
+      - name: Générer le projet Xcode
+        run: xcodegen generate
+
+      - name: Compiler Release sans signature
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild -project MediaBox.xcodeproj -scheme MediaBox \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log
+
+      - name: Créer l'IPA non signé
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$(find build/Build/Products -type d -name 'MediaBox.app' -print -quit)"
+          test -n "$APP"
+          echo "Application compilée : $APP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry MediaBox-unsigned.ipa Payload
+          ls -lh MediaBox-unsigned.ipa
+
+      - name: Résumé du build
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Résultat de compilation MediaBox"
+            echo "- Commit : \`${GITHUB_SHA}\`"
+            echo "- Branche/tag : \`${GITHUB_REF_NAME}\`"
+            if [ -f build.log ]; then
+              echo '### Erreurs et avertissements détectés'
+              grep -E '(^| )error:|(^| )warning:|BUILD SUCCEEDED|BUILD FAILED' build.log | tail -n 100 || true
+            else
+              echo "Aucun build.log n'a été produit."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Archiver l'IPA et le journal même en cas d'échec
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mediabox-build-${{ github.run_number }}
+          path: |
+            MediaBox-unsigned.ipa
+            build.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Signaler automatiquement l'échec du build
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `CI MediaBox en échec — ${context.ref}`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              "La compilation MediaBox a échoué.",
+              "",
+              `- Commit : \`${context.sha}\``,
+              `- Référence : \`${context.ref}\``,
+              `- Déclenché par : @${context.actor}`,
+              `- Exécution : ${runUrl}`,
+              "",
+              "Consulter l'artefact de cette exécution pour récupérer `build.log`.",
+              "Ne pas considérer cette version comme livrable tant que l'erreur n'est pas corrigée."
+            ].join("\n");
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo, state: "open", per_page: 100
+            });
+            const existing = issues.find(i => i.title.startsWith("CI MediaBox en échec"));
+            if (existing) {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: existing.number, body
+              });
+            } else {
+              await github.rest.issues.create({
+                ...context.repo, title, body
+              });
+            }
+
+  tests:
+    name: Tests unitaires iOS Simulator
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Choisir Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Installer XcodeGen et générer le projet
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Exécuter les tests
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild test -project MediaBox.xcodeproj -scheme MediaBox \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log
+
+      - name: Archiver le journal des tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mediabox-tests-${{ github.run_number }}
+          path: test.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Signaler automatiquement l'échec des tests
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Tests MediaBox en échec — ${context.ref}`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              "Les tests unitaires MediaBox ont échoué.",
+              "",
+              `- Commit : \`${context.sha}\``,
+              `- Référence : \`${context.ref}\``,
+              `- Exécution : ${runUrl}`,
+              "",
+              "Récupérer l'artefact des tests pour consulter `test.log`."
+            ].join("\n");
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo, state: "open", per_page: 100
+            });
+            const existing = issues.find(i => i.title.startsWith("Tests MediaBox en échec"));
+            if (existing) {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: existing.number, body
+              });
+            } else {
+              await github.rest.issues.create({
+                ...context.repo, title, body
+              });
+            }
+
+  release:
+    name: Publier la mise à jour GitHub
+    needs: [build, tests]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Télécharger l'IPA compilé
+        uses: actions/download-artifact@v4
+        with:
+          name: mediabox-build-${{ github.run_number }}
+
+      - name: Publier automatiquement la mise à jour
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'nightly' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'MediaBox — dernière version de développement' }}
+          prerelease: ${{ github.ref == 'refs/heads/main' }}
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          overwrite_files: true
+          files: MediaBox-unsigned.ipa
+          generate_release_notes: true
+          fail_on_unmatched_files: true
