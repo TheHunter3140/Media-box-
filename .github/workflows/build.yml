@@ -30,7 +30,16 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            build | tee build.log | tail -n 80
+            build > build.log 2>&1 || BUILD_FAILED=1
+          echo "---- ERREURS ----"
+          grep -E "error:" build.log | sort -u | head -80 || true
+          {
+            echo '### Erreurs de compilation'
+            echo '```'
+            grep -E "error:" build.log | sed 's#/Users/runner/work/Media-box-/Media-box-/##' | sort -u | head -80 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$BUILD_FAILED" ]; then exit 65; fi
 
       - name: Créer l'IPA non signé
         run: |
